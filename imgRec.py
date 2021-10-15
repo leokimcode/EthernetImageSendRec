@@ -6,7 +6,7 @@ from random import randint
 imgcounter = 1
 basename = "opencv_frame_0%s.png"
 
-HOST = '192.168.1.12'
+HOST = '192.168.1.122'
 PORT = 8888
 
 connected_clients_sockets = []
