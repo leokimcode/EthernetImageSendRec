@@ -1,68 +1,30 @@
-import random
-import socket, select
-from time import gmtime, strftime
-from random import randint
+import socket
+import cv2
+import numpy
 
-imgcounter = 1
-basename = "opencv_frame_0%s.png"
+def recvall(sock, count):
+    buf = b''
+    while count:
+        newbuf = sock.recv(count)
+        if not newbuf: return None
+        buf += newbuf
+        count -= len(newbuf)
+    return buf
 
-HOST = '192.168.1.122'
-PORT = 8888
+TCP_IP = 'localhost'
+TCP_PORT = 8888
 
-connected_clients_sockets = []
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind((TCP_IP, TCP_PORT))
+s.listen(True)
+conn, addr = s.accept()
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+length = recvall(conn,16)
+stringData = recvall(conn, int(length))
+data = numpy.fromstring(stringData, dtype='uint8')
+s.close()
 
-sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-sock.bind((HOST, PORT))
-sock.listen(10)
-
-connected_clients_sockets.append(sock)
-
-while True:
-
-    read_sockets, write_sockets, error_sockets = select.select(connected_clients_sockets, [], [])
-
-    for sock in read_sockets:
-
-        if sock == sock:
-
-            sockfd, client_address = sock.accept()
-            connected_clients_sockets.append(sockfd)
-
-        else:
-            try:
-
-                data = sock.recv(4096)
-                txt = str(data)
-
-                if txt.startswith('SIZE'):
-                    tmp = txt.split()
-                    size = int(tmp[1])
-
-                    print('got size')
-
-                    sock.send("GOT SIZE")
-
-                elif txt.startswith('BYE'):
-                    sock.shutdown()
-
-                elif data:
-
-                    myfile = open(basename % imgcounter, 'wb')
-
-                    data = sock.recv(40960000)
-                    if not data:
-                        myfile.close()
-                        break
-                    myfile.write(data)
-                    myfile.close()
-
-                    sock.send("GOT IMAGE")
-                    sock.shutdown()
-            except:
-                sock.close()
-                connected_clients_sockets.remove(sock)
-                continue
-        imgcounter += 1
-sock.close()
+decimg=cv2.imdecode(data,1)
+cv2.imshow('SERVER',decimg)
+cv2.waitKey(0)
+cv2.destroyAllWindows() 
